@@ -1,0 +1,76 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Mind Map</title>
+<link rel="stylesheet" href="/shared.css?v=1">
+<link rel="stylesheet" href="/map.css?v=1">
+</head>
+<body>
+<script src="/theme.js?v=1"></script>
+<script src="/ui-helpers.js?v=1"></script>
+
+<div id="app">
+  <header id="toolbar">
+    <div class="tb-left">
+      <a href="/" class="back" title="Back to your maps">←</a>
+      <span id="mapTitle" class="map-title"></span>
+    </div>
+    <div class="tb-right">
+      <button id="btnUndo" title="Undo (Ctrl+Z)">↶ Undo</button>
+      <button id="btnShowAll" title="Show all descriptions">Show all descriptions</button>
+      <button id="btnConnect" title="Connect two nodes">🔗 Connect</button>
+      <button id="btnExport" title="Export as PDF">⤓ Export PDF</button>
+      <button class="theme-toggle-inline" onclick="toggleTheme()">🌓</button>
+    </div>
+  </header>
+
+  <div id="hint" class="hint"></div>
+
+  <div id="canvasContainer">
+    <div id="canvas">
+      <svg id="linkLayer"></svg>
+      <div id="nodeLayer"></div>
+    </div>
+  </div>
+</div>
+
+<!-- Node edit modal -->
+<div id="modalOverlay" class="modal-overlay hidden">
+  <div class="modal">
+    <h2 id="modalHeading">Node</h2>
+    <label>Title</label>
+    <input type="text" id="modalTitle" maxlength="2000">
+    <label>Description</label>
+    <textarea id="modalDesc" rows="6"></textarea>
+    <div class="modal-actions">
+      <button id="modalCancel">Cancel</button>
+      <button id="modalSave" class="primary">Save</button>
+    </div>
+  </div>
+</div>
+
+<!-- Link style modal -->
+<div id="linkModalOverlay" class="modal-overlay hidden">
+  <div class="modal small">
+    <h2>Connection style</h2>
+    <label>Line style</label>
+    <select id="linkStyleSelect">
+      <option value="solid">Solid</option>
+      <option value="dashed">Dashed</option>
+      <option value="dotted">Dotted</option>
+    </select>
+    <label>Color</label>
+    <input type="color" id="linkColorInput" value="#888888">
+    <div class="modal-actions">
+      <button id="linkDeleteBtn" class="danger">Delete link</button>
+      <button id="linkModalCancel">Cancel</button>
+      <button id="linkModalSave" class="primary">Save</button>
+    </div>
+  </div>
+</div>
+
+<script src="/map.js?v=1"></script>
+</body>
+</html>

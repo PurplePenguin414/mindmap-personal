@@ -1,0 +1,11 @@
+services:
+  mindmap:
+    build: .
+    container_name: mindmap
+    restart: unless-stopped
+    env_file:
+      - .env
+    ports:
+      - "127.0.0.1:3040:3000"   # reserved for Mind Map on MLG-VPS02
+    volumes:
+      - ./db:/app/db

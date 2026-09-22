@@ -1,0 +1,48 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Mind Map — Your Maps</title>
+<link rel="stylesheet" href="/shared.css?v=1">
+<style>
+  .wrap { max-width: 760px; margin: 0 auto; padding: 60px 20px; }
+  h1 { display: flex; align-items: center; justify-content: space-between; }
+  .new-form { display: flex; gap: 10px; margin-bottom: 30px; }
+  .new-form input { flex: 1; }
+  .maps-list { display: flex; flex-direction: column; gap: 10px; }
+  .map-card {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    background: var(--bg-elevated);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 14px 18px;
+    text-decoration: none;
+    color: var(--text);
+  }
+  .map-card:hover { border-color: var(--accent); }
+  .map-meta { font-size: 12px; color: var(--text-muted); margin-top: 2px; }
+  .map-title { font-weight: 600; }
+  .empty { color: var(--text-muted); text-align: center; padding: 40px 0; }
+  .logout { font-size: 12px; }
+  .top-bar { display: flex; justify-content: flex-end; margin-bottom: 10px; }
+</style>
+</head>
+<body>
+<script src="/theme.js?v=1"></script>
+<script src="/ui-helpers.js?v=1"></script>
+<button class="theme-toggle" onclick="toggleTheme()">🌓</button>
+<div class="wrap">
+  <div class="top-bar"><button class="logout" onclick="logout()">Log out</button></div>
+  <h1>Your Mind Maps</h1>
+  <form class="new-form" id="newForm">
+    <input type="text" id="newTitle" placeholder="Title for a new map (becomes the center node)" required>
+    <button type="submit" class="primary">Create</button>
+  </form>
+  <div class="maps-list" id="mapsList"></div>
+</div>
+<script src="/index.js?v=1"></script>
+</body>
+</html>
