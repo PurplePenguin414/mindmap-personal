@@ -65,6 +65,15 @@ app.use('/login.js', express.static(path.join(__dirname, 'public', 'login.js')))
 app.use('/shared.css', express.static(path.join(__dirname, 'public', 'shared.css')));
 app.use('/theme.js', express.static(path.join(__dirname, 'public', 'theme.js')));
 app.use('/ui-helpers.js', express.static(path.join(__dirname, 'public', 'ui-helpers.js')));
+// Favicon/app-icon files: browsers and iOS request these directly, with no
+// session cookie attached, so they have to be reachable pre-auth too.
+app.use('/favicon.ico', express.static(path.join(__dirname, 'public', 'favicon.ico')));
+app.use('/favicon-16.png', express.static(path.join(__dirname, 'public', 'favicon-16.png')));
+app.use('/favicon-32.png', express.static(path.join(__dirname, 'public', 'favicon-32.png')));
+app.use('/icon-192.png', express.static(path.join(__dirname, 'public', 'icon-192.png')));
+app.use('/icon-512.png', express.static(path.join(__dirname, 'public', 'icon-512.png')));
+app.use('/apple-touch-icon.png', express.static(path.join(__dirname, 'public', 'apple-touch-icon.png')));
+app.use('/manifest.json', express.static(path.join(__dirname, 'public', 'manifest.json')));
 
 app.use(requireAuth);
 app.use(express.static(path.join(__dirname, 'public')));
