@@ -126,10 +126,8 @@ html, body { height: 100%; margin: 0; overflow: hidden; }
 .modal input, .modal textarea, .modal select { width: 100%; }
 .modal-actions { display: flex; justify-content: flex-end; gap: 8px; margin-top: 18px; }
 
+/* Printing/PDF export is handled by exportPdf() in map.js, which builds its
+   own print-only document — the live canvas isn't printed directly. */
 @media print {
   #toolbar, .hint, .theme-toggle, .node-toolbar { display: none !important; }
-  html, body { overflow: visible !important; height: auto !important; }
-  #canvasContainer { overflow: visible !important; height: auto !important; background: white !important; }
-  #canvas, #linkLayer, #nodeLayer { position: relative !important; }
-  .node { box-shadow: none !important; }
 }

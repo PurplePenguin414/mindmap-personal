@@ -510,40 +510,106 @@ document.getElementById('btnExport').onclick = () => {
   exportPdf();
 };
 
-function exportPdf() {
-  if (data.nodes.length === 0) { window.print(); return; }
-  const xs = data.nodes.map(n => n.x);
-  const ys = data.nodes.map(n => n.y);
-  const pad = 120;
-  const minX = Math.min(...xs) - pad, maxX = Math.max(...xs) + pad;
-  const minY = Math.min(...ys) - pad, maxY = Math.max(...ys) + pad;
-  const width = maxX - minX;
-  const height = maxY - minY;
+// --- PDF export -------------------------------------------------------
+//
+// Printing the live canvas directly doesn't work: it's an 8000x8000 scrolling
+// surface with the map sitting around its center, so the printed pages were
+// just empty corners of it. Instead we build a separate print-only document,
+// sized to exactly the map's bounding box, in a hidden iframe and print that.
+// The live page is never touched, and the print always uses the light palette
+// (dark-theme text would otherwise print white-on-white).
 
-  const prevWidth = canvasEl.style.width, prevHeight = canvasEl.style.height;
-  const shiftX = CANVAS_CENTER - minX;
-  const shiftY = CANVAS_CENTER - minY;
+// Chrome/Edge cap PDF page dimensions around 200in (~19200 CSS px); very
+// large maps are scaled down to fit under this instead of being cut off.
+const MAX_PRINT_PX = 18000;
 
-  // Temporarily shift the whole layer so the content's bounding box starts
-  // at (0,0), then shrink the canvas/svg to exactly that box for printing.
-  nodeLayer.style.transform = `translate(${shiftX - CANVAS_CENTER}px, ${shiftY - CANVAS_CENTER}px)`;
-  linkLayer.style.transform = `translate(${shiftX - CANVAS_CENTER}px, ${shiftY - CANVAS_CENTER}px)`;
-  canvasEl.style.width = width + 'px';
-  canvasEl.style.height = height + 'px';
+function buildPrintHtml() {
+  const els = [...nodeLayer.querySelectorAll('.node')];
+  if (els.length === 0) return null;
 
-  const cleanup = () => {
-    nodeLayer.style.transform = '';
-    linkLayer.style.transform = '';
-    canvasEl.style.width = prevWidth || '8000px';
-    canvasEl.style.height = prevHeight || '8000px';
-    window.removeEventListener('afterprint', cleanup);
-  };
-  window.addEventListener('afterprint', cleanup);
-  setTimeout(() => {
-    window.print();
-    setTimeout(cleanup, 500);
-  }, 50);
+  // Bounding box from the rendered nodes (real sizes, not just centers).
+  let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
+  for (const el of els) {
+    const w = el.offsetWidth, h = el.offsetHeight;
+    const cx = parseFloat(el.style.left), cy = parseFloat(el.style.top);
+    minX = Math.min(minX, cx - w / 2);
+    maxX = Math.max(maxX, cx + w / 2);
+    minY = Math.min(minY, cy - h / 2);
+    maxY = Math.max(maxY, cy + h / 2);
+  }
+  const pad = 48;
+  minX -= pad; minY -= pad; maxX += pad; maxY += pad;
+  const width = Math.ceil(maxX - minX);
+  const height = Math.ceil(maxY - minY);
+  const scale = Math.min(1, MAX_PRINT_PX / Math.max(width, height));
+  const pageW = Math.ceil(width * scale);
+  const pageH = Math.ceil(height * scale);
+
+  // Clone the rendered links and nodes, minus anything interactive.
+  const svg = linkLayer.cloneNode(true);
+  svg.removeAttribute('id');
+  svg.querySelectorAll('.hit').forEach((n) => n.remove());
+  const nodesHtml = els.map((el) => {
+    const c = el.cloneNode(true);
+    c.classList.remove('selected', 'connect-source');
+    c.querySelectorAll('.node-toolbar').forEach((n) => n.remove());
+    return c.outerHTML;
+  }).join('');
+
+  // Reuse the page's own stylesheet URLs so the print document never drifts
+  // from the app's real styles (or their cache-busting versions).
+  const cssLinks = [...document.querySelectorAll('link[rel="stylesheet"]')]
+    .map((l) => `<link rel="stylesheet" href="${l.getAttribute('href')}">`)
+    .join('\n');
+
+  const title = (data.map && data.map.title ? data.map.title : 'Mind Map')
+    .replace(/[<>&"]/g, (ch) => ({ '<': '&lt;', '>': '&gt;', '&': '&amp;', '"': '&quot;' }[ch]));
+
+  return `<!doctype html>
+<html data-theme="light"><head><meta charset="UTF-8"><title>${title}</title>
+${cssLinks}
+<style>
+  @page { size: ${pageW}px ${pageH}px; margin: 0; }
+  html, body { margin: 0; padding: 0; width: ${pageW}px; height: ${pageH}px; overflow: hidden; background: #fff; }
+  * { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+  #pc { position: absolute; left: 0; top: 0; width: ${pageW}px; height: ${pageH}px; overflow: hidden; background: #fff; }
+  #inner { position: absolute; left: ${-minX * scale}px; top: ${-minY * scale}px; width: 8000px; height: 8000px;
+           transform: scale(${scale}); transform-origin: 0 0; }
+  #inner > svg { position: absolute; left: 0; top: 0; width: 8000px; height: 8000px; overflow: visible; }
+  .node { box-shadow: none; cursor: default; }
+  .node .n-desc { max-height: none; overflow: visible; }
+</style></head>
+<body><div id="pc"><div id="inner">${svg.outerHTML}${nodesHtml}</div></div></body></html>`;
 }
+
+function exportPdf() {
+  const html = buildPrintHtml();
+  if (!html) { showError('Nothing to export yet.'); return; }
+
+  const old = document.getElementById('printFrame');
+  if (old) old.remove();
+
+  const frame = document.createElement('iframe');
+  frame.id = 'printFrame';
+  frame.setAttribute('aria-hidden', 'true');
+  frame.style.cssText = 'position:fixed;right:0;bottom:0;width:0;height:0;border:0;visibility:hidden;';
+  frame.onload = () => {
+    const w = frame.contentWindow;
+    w.addEventListener('afterprint', () => setTimeout(() => frame.remove(), 1000));
+    w.focus();
+    w.print();
+  };
+  frame.srcdoc = html;
+  document.body.appendChild(frame);
+}
+
+// Ctrl/Cmd+P would otherwise print the raw canvas (blank) — use the same export.
+document.addEventListener('keydown', (e) => {
+  if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'p') {
+    e.preventDefault();
+    exportPdf();
+  }
+});
 
 document.addEventListener('keydown', (e) => {
   if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'z') {
